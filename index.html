@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rates of Reaction Simulator</title>
+<meta name="description" content="Interactive collision theory simulation: effective collisions, pressure, temperature, particle size, concentration and catalysts." />
+<style>
+:root{
+  --bg:#f1f5f9; --card:#ffffff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+  --accent:#4f46e5; --accent-soft:#eef2ff;
+  --A:#3b82f6; --B:#f59e0b; --good:#22c55e; --bad:#ef4444; --canvas:#0b1220;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{background:linear-gradient(135deg,#312e81,#4f46e5 60%,#0ea5e9);color:#fff;padding:20px 24px}
+header h1{margin:0;font-size:1.5rem}
+header p{margin:4px 0 0;opacity:.88;font-size:.95rem}
+.tabs{display:flex;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:0;z-index:10}
+.tab-btn,.sub-btn{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600;color:var(--muted);white-space:nowrap;font-size:.92rem;font-family:inherit}
+.tab-btn:hover,.sub-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.sub-btn{border-radius:10px}
+.sub-btn.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+main{max-width:1280px;margin:0 auto;padding:16px}
+.tab-panel,.sub-panel{display:none}
+.tab-panel.active,.sub-panel.active{display:block}
+.subtabs{display:flex;gap:8px;margin-bottom:14px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}
+@media (max-width:960px){.layout{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:16px}
+.card h3{margin:0 0 8px;font-size:1rem}
+canvas{display:block;width:100%;height:auto;border-radius:10px}
+canvas.dark{background:var(--canvas)}
+canvas.light{background:#fff;border:1px solid var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.82rem;color:var(--muted);margin-bottom:8px}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-2px;margin-right:5px}
+.legend .eqn{color:var(--ink);font-weight:700;background:var(--accent-soft);padding:2px 10px;border-radius:999px;flex-basis:100%;width:max-content;max-width:max-content}
+.legend .eqn .dot{margin:0 3px 0 4px}
+.graphs2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:700px){.graphs2{grid-template-columns:1fr}}
+.glegend{display:flex;flex-wrap:wrap;gap:4px 20px;font-size:.84rem;color:#334155;margin:10px 0 4px}
+.glegend .sw{display:inline-block;width:24px;border-top:3px solid;vertical-align:middle;margin-right:7px}
+.glegend .sw.dash{border-top-style:dashed}
+.readguide{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:10px;font-size:.88rem}
+.readguide h4{margin:0 0 4px;font-size:.92rem}
+.readguide ul{margin:4px 0 0;padding-left:18px}
+.readguide li{margin-bottom:4px}
+.stat.hl{grid-column:1 / -1;background:var(--accent-soft);border-color:#c7d2fe}
+.stat.hl .v{color:var(--accent);font-size:1.5rem}
+.glow{display:inline-block;width:12px;height:12px;border-radius:50%;background:#64748b;vertical-align:-2px;margin:0 7px 0 3px}
+.glow.good{box-shadow:0 0 7px 5px rgba(34,197,94,.8)}
+.glow.bad{box-shadow:0 0 7px 5px rgba(239,68,68,.8)}
+.control{margin-bottom:14px}
+.control label{display:flex;justify-content:space-between;font-weight:600;font-size:.92rem;margin-bottom:4px}
+.control output{color:var(--accent);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.ticks{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-top:2px}
+.check{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.9rem;margin:6px 0;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.check.big{font-size:1rem;padding:10px 12px;background:var(--accent-soft);border-radius:10px;margin-bottom:12px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.btn{border:none;background:var(--accent);color:#fff;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;font-size:.9rem}
+.btn:hover{filter:brightness(1.08)}
+.btn.secondary{background:var(--accent-soft);color:var(--accent)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.stat .v{font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .k{font-size:.75rem;color:var(--muted);line-height:1.3}
+.info{font-size:.9rem}
+.info ul{padding-left:18px;margin:6px 0}
+.info li{margin-bottom:4px}
+.verdict{padding:10px 12px;border-radius:10px;font-weight:600;font-size:.92rem;background:#f8fafc;border:1px solid var(--line)}
+.verdict.good{background:#f0fdf4;border-color:#86efac;color:#166534}
+.verdict.bad{background:#fef2f2;border-color:#fca5a5;color:#991b1b}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}
+td.good{color:#166534;font-weight:600} td.bad{color:#991b1b;font-weight:600}
+.log{list-style:none;padding:0;margin:0;font-size:.85rem}
+.log li{padding:4px 8px;border-radius:6px;margin-bottom:3px}
+.log li.good{background:#f0fdf4;color:#166534}
+.log li.bad{background:#fef2f2;color:#991b1b}
+.hint{font-size:.82rem;color:var(--muted);margin:8px 0 0}
+footer{text-align:center;color:var(--muted);font-size:.8rem;padding:10px 20px 24px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Collision Theory &amp; Rates of Reaction</h1>
+  <p>An interactive particle simulation: see what makes a collision effective, and how each factor changes the rate of reaction.</p>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab-btn active" data-tab="collision">Effective Collisions</button>
+  <button class="tab-btn" data-tab="pressure">Pressure</button>
+  <button class="tab-btn" data-tab="temperature">Temperature</button>
+  <button class="tab-btn" data-tab="size">Particle Size</button>
+  <button class="tab-btn" data-tab="concentration">Concentration</button>
+  <button class="tab-btn" data-tab="catalyst">Catalyst</button>
+</nav>
+
+<main>
+  <!-- ================= EFFECTIVE COLLISIONS ================= -->
+  <section class="tab-panel active" id="tab-collision">
+    <div class="subtabs">
+      <button class="sub-btn active" data-sub="single">Single collision</button>
+      <button class="sub-btn" data-sub="multiple">Multiple collisions</button>
+    </div>
+
+    <!-- Single collision -->
+    <div class="sub-panel active" id="sub-single">
+      <div class="layout">
+        <div>
+          <div class="card">
+            <h3>Zoomed-in view: one particle of A meets one particle of B</h3>
+            <div class="legend">
+              <span class="eqn">Reaction: <i class="dot" style="background:var(--A)"></i>A + <i class="dot" style="background:var(--B)"></i>B → <i class="dot" style="background:linear-gradient(90deg,var(--A) 50%,var(--B) 50%)"></i>AB</span>
+              <span><i class="dot" style="background:var(--A)"></i>Reactant A</span>
+              <span><i class="dot" style="background:var(--B)"></i>Reactant B</span>
+              <span><i class="glow good"></i>Green glow: effective collision</span>
+              <span><i class="glow bad"></i>Red glow: not effective</span>
+            </div>
+            <canvas id="singleCanvas" class="dark"></canvas>
+          </div>
+          <div class="card">
+            <h3>Energy profile diagram</h3>
+            <canvas id="profileCanvas" class="light"></canvas>
+            <p class="hint">The purple ball shows how far up the energy "hill" the colliding particles get. The reaction only happens if the collision energy reaches the top of the hill (the activation energy).</p>
+          </div>
+        </div>
+        <aside>
+          <div class="card">
+            <h3>Controls</h3>
+            <div class="control">
+              <label><span>Activation energy, E<sub>a</sub></span> <output id="sEaOut"></output></label>
+              <input type="range" id="sEa" min="10" max="100" step="1" value="50">
+            </div>
+            <div class="control">
+              <label>Collision energy <output id="sEOut"></output></label>
+              <input type="range" id="sE" min="5" max="120" step="1" value="35">
+            </div>
+            <div class="btns">
+              <button class="btn" id="sGo">▶ Collide!</button>
+              <button class="btn secondary" id="sRand">🎲 Random collision</button>
+            </div>
+            <p class="hint">"Random collision" picks an energy the way real collisions do: most collisions have low energy and only a few have high energy.</p>
+          </div>
+          <div class="card">
+            <h3>Result</h3>
+            <div class="verdict" id="sVerdict">Set the energies, then press <b>Collide!</b></div>
+          </div>
+          <div class="card">
+            <h3>Trial record</h3>
+            <table>
+              <thead><tr><th>#</th><th>Collision energy</th><th>E<sub>a</sub></th><th>Result</th></tr></thead>
+              <tbody id="sTable"><tr><td colspan="4" style="color:var(--muted)">No trials yet</td></tr></tbody>
+            </table>
+          </div>
+          <div class="card info">
+            <h3>Key idea</h3>
+            <p>Reactant particles must <b>collide</b> to react, but not every collision causes a reaction.</p>
+            <ul>
+              <li>An <b>effective collision</b> is one that results in a reaction. The particles must collide with energy <b>equal to or greater than the activation energy (E<sub>a</sub>)</b>.</li>
+              <li>E<sub>a</sub> is the minimum energy colliding particles need for bonds to break so the reaction can take place.</li>
+              <li>If the collision energy is less than E<sub>a</sub>, the particles simply bounce apart unchanged.</li>
+            </ul>
+            <p class="hint">At A-level, particles must also collide with the correct orientation. This simulation focuses on energy.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Multiple collisions -->
+    <div class="sub-panel" id="sub-multiple">
+      <div class="layout">
+        <div>
+          <div class="card">
+            <h3>Many particles moving and colliding</h3>
+            <div class="legend">
+              <span class="eqn">Reaction: <i class="dot" style="background:var(--A)"></i>A + <i class="dot" style="background:var(--B)"></i>B → <i class="dot" style="background:linear-gradient(90deg,var(--A) 50%,var(--B) 50%)"></i>AB</span>
+              <span><i class="dot" style="background:var(--A)"></i>Reactant A</span>
+              <span><i class="dot" style="background:var(--B)"></i>Reactant B</span>
+              <span><i class="dot" style="background:linear-gradient(90deg,var(--A) 50%,var(--B) 50%)"></i>Product AB</span>
+              <span><i class="glow good"></i>Green glow: effective A–B collision</span>
+              <span><i class="glow bad"></i>Red glow: not effective</span>
+            </div>
+            <canvas id="multiCanvas" class="dark"></canvas>
+            <p class="hint">The number next to each circle is the energy of that collision in kJ/mol. Tip: turn on <b>Slow motion</b> to read them more easily.</p>
+          </div>
+          <div class="card">
+            <h3>Energies of all A–B collisions so far</h3>
+            <canvas id="histCanvas" class="light"></canvas>
+            <p class="hint">Green bars (to the right of the E<sub>a</sub> line) are effective collisions. Red bars are collisions without enough energy.</p>
+          </div>
+        </div>
+        <aside>
+          <div class="card">
+            <h3>Controls</h3>
+            <div class="control">
+              <label><span>Activation energy, E<sub>a</sub></span> <output id="mEaOut"></output></label>
+              <input type="range" id="mEa" min="10" max="100" step="1" value="50">
+            </div>
+            <label class="check"><input type="checkbox" id="mReact" checked> Effective collisions form product AB</label>
+            <label class="check"><input type="checkbox" id="mLabels" checked> Show collision energies</label>
+            <label class="check"><input type="checkbox" id="mSlow"> Slow motion</label>
+            <div class="btns">
+              <button class="btn" id="mPause">⏸ Pause</button>
+              <button class="btn secondary" id="mReset">↺ Reset</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Collision count</h3>
+            <div class="stats" id="mStats"></div>
+          </div>
+          <div class="card">
+            <h3>Latest A–B collisions</h3>
+            <ul class="log" id="mLog"><li style="color:var(--muted)">Waiting for collisions…</li></ul>
+          </div>
+          <div class="card info">
+            <h3>What to notice</h3>
+            <ul>
+              <li>Particles move at different speeds, so collisions happen with a <b>range of energies</b>.</li>
+              <li>Only collisions with energy ≥ E<sub>a</sub> are effective (green). Most collisions are not (red).</li>
+              <li>Raise E<sub>a</sub>: a smaller proportion of collisions is effective, so the reaction is slower.</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- Factor tabs are built by JavaScript below -->
+  <section class="tab-panel" id="tab-pressure"></section>
+  <section class="tab-panel" id="tab-temperature"></section>
+  <section class="tab-panel" id="tab-size"></section>
+  <section class="tab-panel" id="tab-concentration"></section>
+  <section class="tab-panel" id="tab-catalyst"></section>
+</main>
+
+<footer>Particles, speeds and energies are simplified for learning. Energy values are illustrative (kJ/mol).</footer>
+
+<script>
+(() => {
+'use strict';
+
+/* =========================================================
+   Shared constants and helpers
+   ========================================================= */
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const SIM_W = 640, SIM_H = 400;
+const COLORS = { A:'#3b82f6', B:'#f59e0b', S:'#cbd5e1', good:'#22c55e', bad:'#ef4444' };
+const SIGMA300 = 85;                       // typical speed component (px/s) at 300 K
+const kTof = T => T / 10;                  // "thermal energy" in display units (kJ/mol)
+const ESCALE = kTof(300) / (SIGMA300 * SIGMA300); // converts ½mv² (px²/s²) to kJ/mol
+const DH = -25;
+const ROOM_K = 298;                    // 25 °C
+const toC = K => Math.round(K - 273); // kelvin (used for the physics) → °C (shown to students)
+const GLOW_LIFE = 0.8;     // seconds a collision glow lasts
+const FACTOR_SPEED = 0.6;  // particles in the factor tabs move at 60% speed so they are easier to follow                            // enthalpy change used in energy profiles
+
+function setupCanvas(canvas, w, h) {
+  canvas.width = Math.round(w * DPR);
+  canvas.height = Math.round(h * DPR);
+  canvas.style.aspectRatio = w + ' / ' + h;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.W = w; ctx.H = h;
+  return ctx;
+}
+
+function gauss() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = c => Math.max(0, Math.min(255, Math.round(amt < 0 ? c * (1 + amt) : c + (255 - c) * amt)));
+  return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
+}
+
+function drawBall(ctx, x, y, r, color) {
+  const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+  g.addColorStop(0, shade(color, 0.6));
+  g.addColorStop(0.35, color);
+  g.addColorStop(1, shade(color, -0.4));
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+}
+
+// soft coloured glow around a particle: green = effective collision, red = not effective
+function drawGlow(ctx, x, y, r, eff, alpha = 1) {
+  if (alpha <= 0) return;
+  const c = eff ? '34,197,94' : '239,68,68';
+  const R = r * 2.4 + 6;
+  const g = ctx.createRadialGradient(x, y, r * 0.8, x, y, R);
+  g.addColorStop(0, `rgba(${c},${0.95 * alpha})`);
+  g.addColorStop(0.35, `rgba(${c},${0.5 * alpha})`);
+  g.addColorStop(1, `rgba(${c},0)`);
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawProduct(ctx, x, y, angle, r = 7) {
+  const d = r * 0.8, cx = Math.cos(angle) * d, cy = Math.sin(angle) * d;
+  drawBall(ctx, x - cx, y - cy, r, COLORS.A);
+  drawBall(ctx, x + cx, y + cy, r, COLORS.B);
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, width = 2) {
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - 10 * Math.cos(a - 0.4), y2 - 10 * Math.sin(a - 0.4));
+  ctx.lineTo(x2 - 10 * Math.cos(a + 0.4), y2 - 10 * Math.sin(a + 0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+function axisTitles(ctx, xTitle, yTitle, L, T, B) {
+  const W = ctx.W, H = ctx.H;
+  ctx.fillStyle = '#475569'; ctx.font = '12px system-ui, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(xTitle, (L + W) / 2, H - 8);
+  ctx.save(); ctx.translate(13, (T + H - B) / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText(yTitle, 0, 0); ctx.restore();
+}
+
+/* =========================================================
+   Particle simulation engine
+   ========================================================= */
+class ParticleSim {
+  constructor(canvas, opts) {
+    this.ctx = setupCanvas(canvas, SIM_W, SIM_H);
+    this.o = Object.assign({
+      temp: ROOM_K, ea: 60, nA: 15, nB: 15, pressure: 1, solidLevel: 0,
+      react: true, showRings: true, showLabels: false, slow: false, paused: false,
+      rA: 8, rB: 8, rS: 8, showPiston: false, liquid: false, timeScale: 1, productLeaves: false
+    }, opts);
+    this.runs = [];
+    this.label = '';
+    this.history = null;
+    this.reset(false);
+  }
+
+  get kT() { return kTof(this.o.temp); }
+  get rP() { return Math.round(Math.max(this.o.rA, this.o.rB) * 1.3); }
+
+  box() {
+    const x0 = 12, y0 = 12, y1 = SIM_H - 12, full = SIM_W - 24;
+    return { x0, y0, x1: x0 + full / this.o.pressure, y1 };
+  }
+
+  runLabel() {
+    return this.label + (this.initRate != null ? `  (initial rate ${this.initRate.toFixed(1)}/s)` : '');
+  }
+
+  reset(saveRun = true) {
+    if (saveRun && this.history && this.history.length > 3) {
+      this.runs.unshift({ pts: this.history, label: this.runLabel(), meta: this.meta });
+      if (this.runs.length > 3) this.runs.length = 3;
+    }
+    this.t = 0; this.sampleT = 0;
+    this.ps = []; this.solids = []; this.rings = [];
+    this.history = [{ t: 0, n: 0 }];
+    this.total = 0; this.eff = 0; this.products = 0;
+    this.events = []; this.initRate = null;
+    this.bins = new Array(25).fill(0);
+    this.log = []; this.logDirty = true;
+    this.cell = 2 * Math.max(this.o.rA, this.o.rB, this.rP) + 2;
+    if (this.o.solidLevel) this.buildSolids(this.o.solidLevel);
+    for (let i = 0; i < this.o.nA; i++) this.spawn('A', this.o.rA);
+    for (let i = 0; i < this.o.nB; i++) this.spawn('B', this.o.rB);
+    this.initialSolids = this.solids.length;
+    this.initQuota = Math.max(5, Math.round(0.33 * (this.solids.length || Math.min(this.o.nA, this.o.nB))));
+  }
+
+  newParticle(type, x, y, r, m = 1) {
+    const sg = Math.sqrt(this.kT / (m * ESCALE));
+    return { type, x, y, vx: gauss() * sg, vy: gauss() * sg, r, m, dead: false };
+  }
+
+  spawn(type, r) {
+    const b = this.box();
+    let x = 0, y = 0, ok = false;
+    for (let k = 0; k < 400 && !ok; k++) {
+      x = b.x0 + r + Math.random() * (b.x1 - b.x0 - 2 * r);
+      y = b.y0 + r + Math.random() * (b.y1 - b.y0 - 2 * r);
+      ok = true;
+      for (const p of this.ps) if ((p.x - x) ** 2 + (p.y - y) ** 2 < (p.r + r + 2) ** 2) { ok = false; break; }
+      if (ok) for (const s of this.solids) if ((s.x - x) ** 2 + (s.y - y) ** 2 < (s.r + r + 2) ** 2) { ok = false; break; }
+    }
+    this.ps.push(this.newParticle(type, x, y, r));
+  }
+
+  // solid particles arranged as 1, 4, 16 or 64 pieces (same total mass each time)
+  buildSolids(level) {
+    const r = this.o.rS, d = 2 * r, b = this.box();
+    const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
+    const per = [8, 4, 2, 1][level - 1];
+    const nC = 8 / per;
+    const gap = [0, 44, 36, 28][level - 1];
+    const size = per * d;
+    const total = nC * size + (nC - 1) * gap;
+    const sx = cx - total / 2 + r, sy = cy - total / 2 + r;
+    for (let ci = 0; ci < nC; ci++) for (let cj = 0; cj < nC; cj++)
+      for (let i = 0; i < per; i++) for (let j = 0; j < per; j++) {
+        this.solids.push({
+          x: sx + ci * (size + gap) + i * d, y: sy + cj * (size + gap) + j * d,
+          r, gx: i, gy: j, clump: ci + ',' + cj, dead: false
+        });
+      }
+  }
+
+  exposedCount() {
+    const key = (c, x, y) => c + '|' + x + '|' + y;
+    const set = new Set(this.solids.map(s => key(s.clump, s.gx, s.gy)));
+    let c = 0;
+    for (const s of this.solids) {
+      if (!set.has(key(s.clump, s.gx + 1, s.gy)) || !set.has(key(s.clump, s.gx - 1, s.gy)) ||
+          !set.has(key(s.clump, s.gx, s.gy + 1)) || !set.has(key(s.clump, s.gx, s.gy - 1))) c++;
+    }
+    return c;
+  }
+
+  count(type) { return this.ps.filter(p => p.type === type).length; }
+
+  // collisions and effective collisions per second over the last few seconds
+  rollingRates(win = 4) {
+    const span = Math.min(win, this.t);
+    if (span < 1) return null;
+    let all = 0, eff = 0;
+    for (const e of this.events) { all++; if (e.eff) eff++; }
+    return { all: all / span, eff: eff / span };
+  }
+
+  update(dt) {
+    if (this.o.paused) return;
+    dt *= (this.o.slow ? 0.25 : 1) * this.o.timeScale;
+    const steps = 3, h = dt / steps;
+    for (let k = 0; k < steps; k++) this.substep(h);
+    this.t += dt;
+    for (const r of this.rings) r.age += dt;
+    this.rings = this.rings.filter(r => r.age < GLOW_LIFE);
+    const cutoff = this.t - 4;
+    let k = 0; while (k < this.events.length && this.events[k].t < cutoff) k++;
+    if (k) this.events.splice(0, k);
+    // initial rate: measured over the first 5 s, or until 25% of the reactant is used up
+    if (this.initRate == null && this.t >= 1.5 && (this.t >= 8 || this.products >= this.initQuota)) this.initRate = this.products / this.t;
+    for (const p of this.ps) if (p.leaving != null) { p.leaving -= dt; if (p.leaving <= 0) p.dead = true; }
+    if (this.ps.some(p => p.dead)) this.ps = this.ps.filter(p => !p.dead);
+    this.thermostat(dt);
+    this.sampleT += dt;
+    if (this.sampleT >= 0.2) { this.sampleT = 0; this.history.push({ t: this.t, n: this.products }); }
+  }
+
+  substep(h) {
+    const b = this.box(), ps = this.ps, n = ps.length;
+    for (const p of ps) {
+      p.x += p.vx * h; p.y += p.vy * h;
+      if (p.x - p.r < b.x0) { p.x = b.x0 + p.r; p.vx = Math.abs(p.vx); }
+      if (p.x + p.r > b.x1) { p.x = b.x1 - p.r; p.vx = -Math.abs(p.vx); }
+      if (p.y - p.r < b.y0) { p.y = b.y0 + p.r; p.vy = Math.abs(p.vy); }
+      if (p.y + p.r > b.y1) { p.y = b.y1 - p.r; p.vy = -Math.abs(p.vy); }
+    }
+    // spatial grid so hundreds of particles stay fast
+    const cs = this.cell, cols = Math.ceil(SIM_W / cs) + 1, rows = Math.ceil(SIM_H / cs) + 1;
+    const heads = new Int32Array(cols * rows).fill(-1), next = new Int32Array(n);
+    const cx = new Int32Array(n), cy = new Int32Array(n);
+    for (let i = 0; i < n; i++) {
+      cx[i] = Math.max(0, Math.min(cols - 1, Math.floor(ps[i].x / cs)));
+      cy[i] = Math.max(0, Math.min(rows - 1, Math.floor(ps[i].y / cs)));
+      const c = cx[i] + cy[i] * cols; next[i] = heads[c]; heads[c] = i;
+    }
+    for (let i = 0; i < n; i++) {
+      const a = ps[i];
+      if (a.dead) continue;
+      outer:
+      for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
+        const gx = cx[i] + ox, gy = cy[i] + oy;
+        if (gx < 0 || gy < 0 || gx >= cols || gy >= rows) continue;
+        for (let j = heads[gx + gy * cols]; j !== -1; j = next[j]) {
+          if (j <= i || ps[j].dead) continue;
+          this.pair(a, ps[j]);
+          if (a.dead) break outer;
+        }
+      }
+      if (!a.dead && this.solids.length && a.type === 'B') {
+        for (const s of this.solids) if (!s.dead) this.solidHit(a, s);
+      }
+    }
+    if (this.ps.some(p => p.dead)) this.ps = this.ps.filter(p => !p.dead);
+    if (this.solids.some(s => s.dead)) this.solids = this.solids.filter(s => !s.dead);
+  }
+
+  pair(a, b) {
+    if (a.leaving != null || b.leaving != null) return; // escaping gas no longer collides
+    const dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy, R = a.r + b.r;
+    if (d2 >= R * R || d2 === 0) return;
+    const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, tm = a.m + b.m;
+    const overlap = R - d;
+    a.x += nx * overlap * (b.m / tm); a.y += ny * overlap * (b.m / tm);
+    b.x -= nx * overlap * (a.m / tm); b.y -= ny * overlap * (a.m / tm);
+    const vn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+    if (vn >= 0) return; // already separating
+    const mu = a.m * b.m / tm;
+    const reactive = (a.type === 'A' && b.type === 'B') || (a.type === 'B' && b.type === 'A');
+    if (reactive) {
+      const E = ESCALE * 0.5 * mu * vn * vn;
+      const eff = E >= this.o.ea;
+      const g = this.register([a, b], b.x + nx * b.r, b.y + ny * b.r, E, eff);
+      if (eff && this.o.react) { const p = this.makeProduct(a, b); if (g) g.parts = [p]; return; }
+    }
+    const J = -2 * mu * vn; // elastic bounce
+    a.vx += J / a.m * nx; a.vy += J / a.m * ny;
+    b.vx -= J / b.m * nx; b.vy -= J / b.m * ny;
+  }
+
+  solidHit(a, s) {
+    const dx = a.x - s.x, dy = a.y - s.y;
+    if (Math.abs(dx) > 30 || Math.abs(dy) > 30) return;
+    const d2 = dx * dx + dy * dy, R = a.r + s.r;
+    if (d2 >= R * R || d2 === 0) return;
+    const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
+    a.x += nx * (R - d); a.y += ny * (R - d);
+    const vn = a.vx * nx + a.vy * ny;
+    if (vn >= 0) return;
+    const E = ESCALE * 0.5 * a.m * vn * vn;
+    const eff = E >= this.o.ea;
+    const g = this.register([a, s], s.x + nx * s.r, s.y + ny * s.r, E, eff);
+    if (eff && this.o.react) {
+      s.dead = true; this.products++;
+      if (g) { g.parts = [a]; g.ghost = { x: s.x, y: s.y, r: s.r }; } // fading glow where the solid particle was
+    }
+    a.vx -= 2 * vn * nx; a.vy -= 2 * vn * ny;
+  }
+
+  makeProduct(a, b) {
+    a.dead = b.dead = true;
+    const tm = a.m + b.m;
+    const p = {
+      type: 'P', x: (a.x * a.m + b.x * b.m) / tm, y: (a.y * a.m + b.y * b.m) / tm,
+      vx: (a.vx * a.m + b.vx * b.m) / tm, vy: (a.vy * a.m + b.vy * b.m) / tm,
+      r: this.rP, m: tm, dead: false
+    };
+    if (this.o.productLeaves) { p.leaving = 1.2; p.vx *= 0.4; p.vy = -60 - Math.abs(p.vy) * 0.3; } // gas bubbles away
+    this.ps.push(p);
+    this.products++;
+    return p;
+  }
+
+  register(parts, x, y, E, eff) {
+    this.total++;
+    if (eff) this.eff++;
+    this.events.push({ t: this.t, eff });
+    this.bins[Math.min(24, Math.floor(E / 5))]++;
+    this.log.unshift({ E, eff });
+    if (this.log.length > 8) this.log.pop();
+    this.logDirty = true;
+    if (!this.o.showRings || this.rings.length >= 60) return null;
+    const g = { parts, x, y, E, eff, age: 0 };
+    this.rings.push(g);
+    return g;
+  }
+
+  // keeps the average kinetic energy matched to the chosen temperature
+  thermostat(dt) {
+    let ke = 0, n = 0;
+    for (const p of this.ps) { if (p.leaving != null) continue; ke += 0.5 * p.m * (p.vx * p.vx + p.vy * p.vy); n++; }
+    if (!n || ke <= 0) return;
+    const target = n * this.kT / ESCALE;
+    const lam = Math.sqrt(target / ke);
+    const f = 1 + (lam - 1) * Math.min(1, dt * 2);
+    for (const p of this.ps) if (p.leaving == null) { p.vx *= f; p.vy *= f; }
+  }
+
+  draw() {
+    const ctx = this.ctx, b = this.box();
+    ctx.fillStyle = this.o.liquid ? '#0c2238' : '#0b1220'; ctx.fillRect(0, 0, SIM_W, SIM_H);
+    if (this.o.showPiston) {
+      ctx.fillStyle = '#162033'; ctx.fillRect(b.x1, 0, SIM_W - b.x1, SIM_H);
+      ctx.fillStyle = '#94a3b8'; ctx.fillRect(b.x1, b.y0, 8, b.y1 - b.y0);
+      ctx.fillRect(b.x1 + 8, SIM_H / 2 - 5, SIM_W - b.x1 - 8, 10);
+    }
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2;
+    ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+
+    const fade = r => Math.max(0, 1 - Math.pow(r.age / GLOW_LIFE, 2));
+    const live = r => r.parts.filter(p => !p.dead);
+    for (const r of this.rings) {
+      const a = fade(r);
+      for (const p of live(r)) drawGlow(ctx, p.x, p.y, p.r, r.eff, a);
+      if (r.ghost) drawGlow(ctx, r.ghost.x, r.ghost.y, r.ghost.r, r.eff, a);
+    }
+    for (const s of this.solids) drawBall(ctx, s.x, s.y, s.r, COLORS.S);
+    for (const p of this.ps) {
+      if (p.type === 'P') {
+        ctx.globalAlpha = p.leaving != null ? Math.max(0, Math.min(1, p.leaving / 0.8)) : 1;
+        drawProduct(ctx, p.x, p.y, Math.atan2(p.vy, p.vx), p.r * 0.75);
+        ctx.globalAlpha = 1;
+      }
+      else drawBall(ctx, p.x, p.y, p.r, COLORS[p.type]);
+    }
+    for (const r of this.rings) {
+      const a = fade(r), ps = live(r);
+      if (this.o.showLabels && ps.length) {
+        const lx = ps.reduce((s, p) => s + p.x, 0) / ps.length;
+        const ly = Math.min(...ps.map(p => p.y - p.r));
+        ctx.fillStyle = r.eff ? `rgba(134,239,172,${a})` : `rgba(252,165,165,${a})`;
+        ctx.font = 'bold 12px system-ui, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(Math.round(r.E), lx, ly - 10);
+      }
+    }
+    ctx.fillStyle = 'rgba(226,232,240,0.95)'; ctx.font = '12px system-ui, sans-serif'; ctx.textAlign = 'left';
+    let info = `T = ${toC(this.o.temp)} °C    Eₐ = ${this.o.ea} kJ/mol`;
+    if (this.o.showPiston) info += `    P = ${this.o.pressure.toFixed(1)} atm`;
+    ctx.fillText(info, 20, 30);
+    if (this.o.paused) {
+      ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.font = 'bold 16px system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.fillText('PAUSED', SIM_W / 2, 30);
+    }
+  }
+}
+
+/* =========================================================
+   Charts
+   ========================================================= */
+function drawRunGraph(ctx, sim, ymax, yTitle, opts = {}) {
+  const map = opts.map || (n => n);
+  const W = ctx.W, H = ctx.H, L = 50, R = 14, T = 16, B = 38;
+  ctx.clearRect(0, 0, W, H);
+  const all = [sim.history, ...sim.runs.map(r => r.pts)];
+  let xmax = 30;
+  for (const s of all) { const last = s[s.length - 1]; if (last && last.t > xmax) xmax = Math.ceil(last.t / 10) * 10; }
+  const X = t => L + (t / xmax) * (W - L - R);
+  const Y = n => H - B - (Math.min(n, ymax) / ymax) * (H - T - B);
+
+  ctx.font = '11px system-ui, sans-serif'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const v = ymax * i / 4, y = Y(v);
+    ctx.strokeStyle = '#eef2f7'; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(W - R, y); ctx.stroke();
+    ctx.fillStyle = '#64748b'; ctx.textAlign = 'right'; ctx.fillText(ymax < 10 ? +v.toFixed(2) : Math.round(v), L - 6, y + 4);
+  }
+  const stepX = xmax <= 40 ? 5 : xmax <= 100 ? 10 : 20;
+  for (let t = 0; t <= xmax; t += stepX) {
+    ctx.fillStyle = '#64748b'; ctx.textAlign = 'center'; ctx.fillText(t, X(t), H - B + 15);
+  }
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - R, H - B); ctx.stroke();
+  axisTitles(ctx, 'Time / s', yTitle, L, T, B);
+
+  // light moving-average smoothing so the curve isn't a staircase
+  const smoothPts = pts => pts.map((p, i) => {
+    if (i === 0) return p;
+    const k = Math.min(4, i, pts.length - 1 - i);
+    let s = 0;
+    for (let j = i - k; j <= i + k; j++) s += pts[j].n;
+    return { t: p.t, n: s / (2 * k + 1) };
+  });
+  const line = (pts, color, width, dash, meta) => {
+    const sp = smoothPts(pts).map(p => ({ t: p.t, n: Math.max(0, map(p.n, meta)) }));
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash || []);
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath();
+    sp.forEach((p, i) => i ? ctx.lineTo(X(p.t), Y(p.n)) : ctx.moveTo(X(p.t), Y(p.n)));
+    ctx.stroke(); ctx.setLineDash([]);
+  };
+  const runCols = ['#64748b', '#94a3b8', '#cbd5e1'];
+  sim.runs.forEach((r, i) => line(r.pts, runCols[i], 2, [6, 4], r.meta));
+  line(sim.history, '#4f46e5', 3, null, sim.meta);
+  if (opts.legend === false) return;
+
+  // legend
+  ctx.font = '12px system-ui, sans-serif'; ctx.textAlign = 'left';
+  let ly = T + 8;
+  const nowText = 'Now: ' + sim.label + (sim.initRate != null ? `  (initial rate ${sim.initRate.toFixed(1)}/s)` : '  (measuring initial rate…)');
+  const labels = [nowText, ...sim.runs.map(r => 'Earlier: ' + r.label)];
+  const boxW = Math.max(...labels.map(t => ctx.measureText(t).width)) + 46;
+  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.fillRect(L + 6, T - 2, boxW, labels.length * 17 + 6);
+  const entry = (color, text, dash) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.setLineDash(dash || []);
+    ctx.beginPath(); ctx.moveTo(L + 12, ly); ctx.lineTo(L + 34, ly); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#334155'; ctx.fillText(text, L + 40, ly + 4); ly += 17;
+  };
+  entry('#4f46e5', nowText);
+  sim.runs.forEach((r, i) => entry(runCols[i], 'Earlier: ' + r.label, [6, 4]));
+}
+
+function drawHist(ctx, bins, ea) {
+  const W = ctx.W, H = ctx.H, L = 46, R = 14, T = 16, B = 40, Emax = 125;
+  ctx.clearRect(0, 0, W, H);
+  const maxv = Math.max(4, ...bins);
+  const X = e => L + (e / Emax) * (W - L - R);
+  const Y = n => H - B - (n / maxv) * (H - T - B);
+  for (let i = 0; i < bins.length; i++) {
+    const mid = i * 5 + 2.5;
+    ctx.fillStyle = mid >= ea ? 'rgba(34,197,94,0.85)' : 'rgba(239,68,68,0.8)';
+    const x0 = X(i * 5) + 1, x1 = X(i * 5 + 5) - 1;
+    ctx.fillRect(x0, Y(bins[i]), x1 - x0, H - B - Y(bins[i]));
+  }
+  ctx.font = '11px system-ui, sans-serif'; ctx.fillStyle = '#64748b';
+  for (let e = 0; e <= 120; e += 20) { ctx.textAlign = 'center'; ctx.fillText(e === 120 ? '120+' : e, X(e), H - B + 15); }
+  for (let i = 0; i <= 4; i++) { ctx.textAlign = 'right'; ctx.fillText(Math.round(maxv * i / 4), L - 6, Y(maxv * i / 4) + 4); }
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - R, H - B); ctx.stroke();
+  axisTitles(ctx, 'Collision energy / kJ mol⁻¹', 'Number of collisions', L, T, B);
+  ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(X(ea), T); ctx.lineTo(X(ea), H - B); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#7c3aed'; ctx.font = 'bold 12px system-ui, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Eₐ = ' + ea, X(ea) + 5, T + 12);
+}
+
+// Maxwell–Boltzmann energy distribution (textbook 3D shape)
+function mbf(E, kT) { return 2 / Math.sqrt(Math.PI) * Math.pow(kT, -1.5) * Math.sqrt(E) * Math.exp(-E / kT); }
+function fracAbove(ea, kT) {
+  let s = 0; const dE = 0.25;
+  for (let E = ea; E < ea + 40 * kT; E += dE) s += mbf(E + dE / 2, kT) * dE;
+  return s;
+}
+
+function drawMB(ctx, cfg) {
+  const W = ctx.W, H = ctx.H, L = 40, R = 14, T = 16, B = 34, Emax = 160;
+  ctx.clearRect(0, 0, W, H);
+  const ymax = mbf(10, 20) * 1.08;
+  const X = E => L + E / Emax * (W - L - R);
+  const Y = f => H - B - (f / ymax) * (H - T - B);
+  if (cfg.shade) {
+    const { kT, ea, color } = cfg.shade;
+    ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(X(ea), Y(0));
+    for (let E = ea; E <= Emax; E += 1) ctx.lineTo(X(E), Y(mbf(E, kT)));
+    ctx.lineTo(X(Emax), Y(0)); ctx.closePath(); ctx.fill();
+  }
+  for (const c of cfg.curves) {
+    ctx.strokeStyle = c.color; ctx.lineWidth = 2.5; ctx.setLineDash(c.dash || []);
+    ctx.beginPath();
+    for (let E = 0; E <= Emax; E += 0.5) { const x = X(E), y = Y(mbf(E, c.kT)); E === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - R, H - B); ctx.stroke();
+  axisTitles(ctx, 'Kinetic energy of particles', 'Number of particles', L, T, B);
+  for (const e of cfg.eas) {
+    ctx.strokeStyle = e.color; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(X(e.ea), T); ctx.lineTo(X(e.ea), H - B); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = e.color; ctx.font = 'bold 12px system-ui, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(e.label, X(e.ea) + 5, T + 12 + (e.dy || 0));
+  }
+  let ly = T + 12;
+  ctx.font = 'bold 12px system-ui, sans-serif'; ctx.textAlign = 'right';
+  for (const c of cfg.curves) if (c.label) { ctx.fillStyle = c.color; ctx.fillText(c.label, W - R - 4, ly); ly += 17; }
+  ctx.font = '12px system-ui, sans-serif'; ctx.fillStyle = '#0f172a';
+  for (const n of cfg.notes || []) { ctx.fillText(n, W - R - 4, ly); ly += 17; }
+}
+
+// Energy profile diagram
+function smooth01(a, b, x) { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+function profileY(x, ea) {
+  const base = DH * smooth01(0.3, 0.7, x);
+  const A = ea - DH * 0.5;
+  return base + A * Math.exp(-(((x - 0.5) / 0.11) ** 2));
+}
+function invProfile(level, ea) {
+  let lo = 0, hi = 0.5;
+  for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (profileY(m, ea) < level) lo = m; else hi = m; }
+  return (lo + hi) / 2;
+}
+
+function drawProfile(ctx, p) {
+  const W = ctx.W, H = ctx.H, L = 44, R = 20, T = 16, B = 32, Emin = -40, Emax = 128;
+  const X = x => L + x * (W - L - R);
+  const Y = e => T + (Emax - e) / (Emax - Emin) * (H - T - B);
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - R, H - B); ctx.stroke();
+  axisTitles(ctx, 'Reaction progress', 'Energy', L, T, B);
+
+  const curve = (ea, color, dash) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.setLineDash(dash || []);
+    ctx.beginPath();
+    for (let i = 0; i <= 200; i++) { const x = i / 200, y = Y(profileY(x, ea)); i ? ctx.lineTo(X(x), y) : ctx.moveTo(X(x), y); }
+    ctx.stroke(); ctx.setLineDash([]);
+  };
+  curve(p.ea, '#0f172a');
+  if (p.catEa != null) curve(p.catEa, '#16a34a', [7, 5]);
+
+  ctx.fillStyle = '#0f172a'; ctx.font = 'bold 13px system-ui, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('A + B', X(0.1), Y(0) - 10);
+  ctx.fillText('AB', X(0.9), Y(DH) - 10);
+  ctx.fillStyle = '#64748b'; ctx.font = '11px system-ui, sans-serif';
+  ctx.fillText('reactants', X(0.1), Y(0) + 16);
+  ctx.fillText('product', X(0.9), Y(DH) + 16);
+
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(X(0.2), Y(0)); ctx.lineTo(X(0.64), Y(0)); ctx.stroke(); ctx.setLineDash([]);
+
+  drawArrow(ctx, X(0.6), Y(0), X(0.6), Y(p.ea) + 2, '#7c3aed');
+  ctx.fillStyle = '#7c3aed'; ctx.font = 'bold 13px system-ui, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Eₐ = ' + p.ea, X(0.6) + 7, Y(p.ea / 2) + 4);
+
+  if (p.catEa != null) {
+    drawArrow(ctx, X(0.53), Y(0), X(0.53), Y(p.catEa) + 2, '#16a34a');
+    ctx.fillStyle = '#16a34a'; ctx.textAlign = 'right';
+    ctx.fillText('Eₐ = ' + p.catEa, X(0.53) - 6, Y(p.catEa / 2) + 4);
+    ctx.textAlign = 'right'; ctx.font = '12px system-ui, sans-serif';
+    ctx.fillStyle = '#0f172a'; ctx.fillText('—— without catalyst', W - R - 4, T + 12);
+    ctx.fillStyle = '#16a34a'; ctx.fillText('- - - with catalyst', W - R - 4, T + 29);
+  }
+
+  if (p.collisionE != null) {
+    const col = p.collisionE >= (p.ballEa ?? p.ea) ? '#16a34a' : '#dc2626';
+    ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(L, Y(p.collisionE)); ctx.lineTo(W - R, Y(p.collisionE)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = col; ctx.font = 'bold 12px system-ui, sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('Collision energy = ' + p.collisionE, W - R - 4, Y(p.collisionE) - 6);
+  }
+  if (p.ballX != null) {
+    const ea = p.ballEa ?? p.ea;
+    drawBall(ctx, X(p.ballX), Y(profileY(p.ballX, ea)) - 9, 9, '#a855f7');
+  }
+}
+
+/* =========================================================
+   Effective collisions: SINGLE collision
+   ========================================================= */
+const single = (() => {
+  const ctx = setupCanvas(document.getElementById('singleCanvas'), 640, 260);
+  const pctx = setupCanvas(document.getElementById('profileCanvas'), 640, 280);
+  const eaIn = document.getElementById('sEa'), eIn = document.getElementById('sE');
+  const eaOut = document.getElementById('sEaOut'), eOut = document.getElementById('sEOut');
+  const verdict = document.getElementById('sVerdict'), table = document.getElementById('sTable');
+  const R = 28, CY = 125, START_A = 110, START_B = 530, CX = 320;
+  const trials = [];
+  const st = { phase: 'idle', ax: START_A, bx: START_B, E: 35, ea: 50, eff: false, t: 0, speed: 0, prog: 0, ballX: 0.04, xE: 0.04, px: CX };
+
+  function outputs() {
+    eaOut.textContent = eaIn.value + ' kJ/mol';
+    eOut.textContent = eIn.value + ' kJ/mol';
+  }
+
+  function launch() {
+    st.E = +eIn.value; st.ea = +eaIn.value; st.eff = st.E >= st.ea;
+    st.phase = 'approach'; st.ax = START_A; st.bx = START_B; st.t = 0; st.prog = 0;
+    st.speed = 50 + 22 * Math.sqrt(st.E);
+    st.xE = st.eff ? 0.5 : invProfile(st.E, st.ea);
+    verdict.className = 'verdict';
+    verdict.textContent = `Particles approaching with collision energy ${st.E} kJ/mol…`;
+  }
+
+  function recordTrial() {
+    trials.unshift({ E: st.E, ea: st.ea, eff: st.eff });
+    if (trials.length > 10) trials.pop();
+    const n = trials.length;
+    table.innerHTML = trials.map((t, i) =>
+      `<tr><td>${n - i + (trialCount - n)}</td><td>${t.E} kJ/mol</td><td>${t.ea}</td><td class="${t.eff ? 'good' : 'bad'}">${t.eff ? 'Effective' : 'Not effective'}</td></tr>`).join('');
+    if (st.eff) {
+      verdict.className = 'verdict good';
+      verdict.innerHTML = `✅ <b>Effective collision!</b> Collision energy (${st.E} kJ/mol) ≥ activation energy (${st.ea} kJ/mol). Bonds in the reactants break and new bonds form, so product AB is made.`;
+    } else {
+      verdict.className = 'verdict bad';
+      verdict.innerHTML = `❌ <b>Not an effective collision.</b> Collision energy (${st.E} kJ/mol) &lt; activation energy (${st.ea} kJ/mol). The particles just bounce apart. No reaction.`;
+    }
+  }
+  let trialCount = 0;
+
+  eaIn.addEventListener('input', outputs);
+  eIn.addEventListener('input', outputs);
+  document.getElementById('sGo').addEventListener('click', launch);
+  document.getElementById('sRand').addEventListener('click', () => {
+    const E = Math.max(5, Math.min(120, Math.round(-Math.log(1 - Math.random()) * 30)));
+    eIn.value = E; outputs(); launch();
+  });
+  outputs();
+
+  function update(dt) {
+    const startGap = START_B - START_A, contactGap = 2 * R;
+    if (st.phase === 'approach') {
+      st.ax += st.speed * dt; st.bx -= st.speed * dt;
+      const gap = st.bx - st.ax;
+      st.prog = Math.min(1, (startGap - gap) / (startGap - contactGap));
+      st.ballX = 0.04 + st.prog * (st.xE - 0.04);
+      if (gap <= contactGap) {
+        st.ax = CX - R; st.bx = CX + R; st.phase = 'contact'; st.t = 0; st.prog = 1;
+        trialCount++; recordTrial();
+      }
+    } else if (st.phase === 'contact') {
+      st.t += dt;
+      if (st.t > 1.3) { st.phase = 'after'; st.t = 0; st.px = CX; }
+    } else if (st.phase === 'after') {
+      st.t += dt;
+      const k = Math.min(1, st.t / 1.6);
+      if (st.eff) { st.px += 55 * dt; st.ballX = 0.5 + 0.42 * k; }
+      else { st.ax -= st.speed * dt; st.bx += st.speed * dt; st.ballX = st.xE + (0.04 - st.xE) * k; }
+      if (st.t > 2.4) st.phase = 'done';
+    }
+  }
+
+  function label(text, x, y, color = '#e2e8f0', font = '13px') {
+    ctx.fillStyle = color; ctx.font = `${font} system-ui, sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText(text, x, y);
+  }
+
+  function draw() {
+    const W = 640, H = 260;
+    ctx.fillStyle = '#0b1220'; ctx.fillRect(0, 0, W, H);
+    const ph = st.phase;
+    const showProduct = st.eff && (ph === 'after' || ph === 'done');
+
+    // glow behind the colliding particles (green = effective, red = not effective)
+    if (ph === 'contact' || (ph === 'after' && st.t < 2.2)) {
+      const a = ph === 'contact' ? 0.85 + 0.15 * Math.sin(st.t * 10) : Math.max(0, 1 - st.t / 2.2);
+      if (showProduct) drawGlow(ctx, st.px, CY, 36, true, a);
+      else { drawGlow(ctx, st.ax, CY, R, st.eff, a); drawGlow(ctx, st.bx, CY, R, st.eff, a); }
+    }
+    if (!showProduct) {
+      drawBall(ctx, st.ax, CY, R, COLORS.A);
+      drawBall(ctx, st.bx, CY, R, COLORS.B);
+      label('A', st.ax, CY + 6, '#fff', 'bold 18px');
+      label('B', st.bx, CY + 6, '#fff', 'bold 18px');
+    } else {
+      drawBall(ctx, st.px - 18, CY, 24, COLORS.A);
+      drawBall(ctx, st.px + 18, CY, 24, COLORS.B);
+      label('AB', st.px, CY + 6, '#fff', 'bold 16px');
+      label('New product AB formed', st.px, CY + 50, '#86efac', 'bold 14px');
+    }
+
+    if (ph === 'idle') {
+      label('Reactant A', st.ax, CY + 52);
+      label('Reactant B', st.bx, CY + 52);
+      label('Choose a collision energy and press "Collide!"', W / 2, H - 22, '#94a3b8');
+    }
+    if (ph === 'approach') {
+      const len = 18 + st.speed * 0.12;
+      drawArrow(ctx, st.ax + R + 6, CY, st.ax + R + 6 + len, CY, '#e2e8f0');
+      drawArrow(ctx, st.bx - R - 6, CY, st.bx - R - 6 - len, CY, '#e2e8f0');
+      label(`Collision energy: ${st.E} kJ/mol`, W / 2, 34, '#e2e8f0', 'bold 15px');
+      label(`Activation energy needed: ${st.ea} kJ/mol`, W / 2, H - 22, '#c4b5fd');
+    }
+    if (ph === 'contact') {
+      const col = st.eff ? COLORS.good : COLORS.bad;
+      const pulse = 5 * Math.sin(st.t * 12);
+      if (st.eff) {
+        ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2.5;
+        for (let i = 0; i < 10; i++) {
+          const a = i / 10 * Math.PI * 2 + st.t * 2, r1 = 34 + pulse, r2 = 50 + pulse;
+          ctx.beginPath(); ctx.moveTo(CX + Math.cos(a) * r1, CY + Math.sin(a) * r1);
+          ctx.lineTo(CX + Math.cos(a) * r2, CY + Math.sin(a) * r2); ctx.stroke();
+        }
+      }
+      label(`Collision energy = ${st.E} kJ/mol`, W / 2, 34, '#e2e8f0', 'bold 15px');
+      label(st.eff ? `≥ Eₐ (${st.ea} kJ/mol)  →  EFFECTIVE collision` : `< Eₐ (${st.ea} kJ/mol)  →  NOT an effective collision`,
+        W / 2, H - 22, col, 'bold 15px');
+    }
+    if (ph === 'after' || ph === 'done') {
+      const col = st.eff ? COLORS.good : COLORS.bad;
+      label(st.eff ? 'Bonds broke and new bonds formed: a reaction happened!' : 'Particles bounce apart unchanged: no reaction',
+        W / 2, H - 22, col, 'bold 15px');
+    }
+  }
+
+  function drawProfileNow() {
+    const busy = st.phase !== 'idle';
+    drawProfile(pctx, {
+      ea: busy ? st.ea : +eaIn.value,
+      collisionE: busy ? st.E : +eIn.value,
+      ballX: st.ballX,
+      ballEa: busy ? st.ea : +eaIn.value
+    });
+  }
+
+  return { tick(dt) { update(dt); draw(); drawProfileNow(); } };
+})();
+
+/* =========================================================
+   Effective collisions: MULTIPLE collisions
+   ========================================================= */
+const multi = (() => {
+  const sim = new ParticleSim(document.getElementById('multiCanvas'), { nA: 14, nB: 14, ea: 50, showLabels: true });
+  sim.label = 'Eₐ 50';
+  const hctx = setupCanvas(document.getElementById('histCanvas'), 640, 240);
+  const eaIn = document.getElementById('mEa'), eaOut = document.getElementById('mEaOut');
+  const stats = document.getElementById('mStats'), log = document.getElementById('mLog');
+  const pauseBtn = document.getElementById('mPause');
+
+  const setEa = () => { sim.o.ea = +eaIn.value; eaOut.textContent = eaIn.value + ' kJ/mol'; drawHist(hctx, sim.bins, sim.o.ea); };
+  eaIn.addEventListener('input', setEa);
+  document.getElementById('mReact').addEventListener('change', e => sim.o.react = e.target.checked);
+  document.getElementById('mLabels').addEventListener('change', e => sim.o.showLabels = e.target.checked);
+  document.getElementById('mSlow').addEventListener('change', e => sim.o.slow = e.target.checked);
+  pauseBtn.addEventListener('click', () => { sim.o.paused = !sim.o.paused; pauseBtn.textContent = sim.o.paused ? '▶ Play' : '⏸ Pause'; });
+  document.getElementById('mReset').addEventListener('click', () => { sim.reset(false); refresh(); });
+  setEa();
+
+  function refresh() {
+    const pct = sim.total ? (100 * sim.eff / sim.total).toFixed(0) + '%' : '–';
+    stats.innerHTML = [
+      ['A–B collisions', sim.total], ['Effective collisions', sim.eff],
+      ['% of collisions effective', pct], ['Product AB formed', sim.products]
+    ].map(([k, v]) => `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+    drawHist(hctx, sim.bins, sim.o.ea);
+    if (sim.logDirty) {
+      sim.logDirty = false;
+      log.innerHTML = sim.log.length ? sim.log.map(l =>
+        `<li class="${l.eff ? 'good' : 'bad'}">${l.eff ? '✔' : '✘'} Collided at ${Math.round(l.E)} kJ/mol: ${l.eff ? 'effective' : 'not effective'}</li>`).join('')
+        : '<li style="color:var(--muted)">Waiting for collisions…</li>';
+    }
+  }
+
+  let acc = 0;
+  return {
+    tick(dt) {
+      sim.update(dt); sim.draw();
+      acc += dt; if (acc > 0.2) { acc = 0; refresh(); }
+    }
+  };
+})();
+
+/* =========================================================
+   Factor tabs (pressure, temperature, size, concentration, catalyst)
+   ========================================================= */
+const LEGEND = {
+  A: '<span><i class="dot" style="background:var(--A)"></i>Reactant A</span>',
+  B: '<span><i class="dot" style="background:var(--B)"></i>Reactant B</span>',
+  P: '<span><i class="dot" style="background:linear-gradient(90deg,var(--A) 50%,var(--B) 50%)"></i>Product AB</span>',
+  S: '<span><i class="dot" style="background:#cbd5e1"></i>Solid reactant</span>',
+  acid: '<span><i class="dot" style="background:var(--B)"></i>Acid particle (in excess)</span>',
+  good: '<span><i class="glow good"></i>Green glow: effective collision</span>',
+  bad: '<span><i class="glow bad"></i>Red glow: not effective</span>'
+};
+
+function controlHTML(c) {
+  if (c.type === 'checkbox') {
+    return `<label class="check big"><input type="checkbox" class="main-input" ${c.value ? 'checked' : ''}> ${c.label}</label>`;
+  }
+  return `<div class="control">
+    <label>${c.label} <output class="main-out"></output></label>
+    <input type="range" class="main-input" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}">
+    ${c.ticks ? `<div class="ticks">${c.ticks.map(t => `<span>${t}</span>`).join('')}</div>` : ''}
+  </div>`;
+}
+
+function makeFactorTab(cfg) {
+  const root = document.getElementById('tab-' + cfg.id);
+  root.innerHTML = `
+  <div class="layout">
+    <div>
+      <div class="card">
+        <h3>${cfg.title}</h3>
+        <div class="legend">${cfg.legend.map(k => LEGEND[k]).join('')}</div>
+        <canvas class="simc dark"></canvas>
+      </div>
+      ${cfg.dual ? `
+      <div class="card">
+        ${cfg.dual.gasOnly ? `<h3>Volume of gas produced against time</h3><canvas class="gasc light"></canvas>` : `
+        <div class="graphs2">
+          <div><h3>Volume of gas produced against time</h3><canvas class="gasc light"></canvas></div>
+          <div><h3>${cfg.dual.massHeading}</h3><canvas class="massc light"></canvas></div>
+        </div>`}
+        <div class="glegend"></div>
+        <div class="readguide">
+          <h4>How to read ${cfg.dual.gasOnly ? 'this graph' : 'these graphs'}</h4>
+          <ul>
+            <li><b>Volume of gas</b> goes <b>up</b> as the gas (product) is given off and collected.${cfg.dual.gasOnly ? '' : ' <b>Mass of reactants</b> goes <b>down</b> as the reactants are used up.'}</li>
+            <li><b>A steeper line means a faster rate of reaction.</b> The steepness (gradient) shows how quickly gas is produced${cfg.dual.gasOnly ? '' : ', or how quickly the reactants are used up'}.</li>
+            <li>The line is <b>steepest at the start</b>, when there are the most reactant particles. It becomes less steep as the reactants get used up, so the rate slows down.</li>
+            <li><b>When the line levels off (plateaus), the reaction has stopped.</b> No more product is being produced because a reactant has been completely used up.</li>
+            <li><b>Compare runs:</b> the grey dashed lines are earlier runs. ${cfg.dual.note}</li>
+          </ul>
+        </div>
+      </div>` : `
+      <div class="card">
+        <h3>${cfg.graphTitle}</h3>
+        <canvas class="graphc light"></canvas>
+        <p class="hint">When you change the setting (or press <b>Run again</b>), the previous run stays on the graph as a grey dashed line so you can compare. A <b>steeper</b> line means a <b>faster</b> rate of reaction. The line levels off as the reactants get used up, which is also why the "right now" readings fall over time.</p>
+      </div>`}
+      ${(cfg.extras || []).map((e, i) => `<div class="card"><h3>${e.title}</h3><canvas class="extra${i} light"></canvas>${e.hint ? `<p class="hint">${e.hint}</p>` : ''}</div>`).join('')}
+    </div>
+    <aside>
+      <div class="card">
+        <h3>Controls</h3>
+        ${controlHTML(cfg.control)}
+        <label class="check"><input type="checkbox" class="opt-labels"> Show collision energies</label>
+        <label class="check"><input type="checkbox" class="opt-slow"> Slow motion</label>
+        <div class="btns">
+          <button class="btn btn-pause">⏸ Pause</button>
+          <button class="btn secondary btn-again">↺ Run again</button>
+          <button class="btn secondary btn-clear">Clear graph</button>
+        </div>
+      </div>
+      <div class="card"><h3>Live readings</h3><div class="stats"></div></div>
+      <div class="card info">${cfg.info}</div>
+    </aside>
+  </div>`;
+
+  const q = s => root.querySelector(s);
+  const sim = new ParticleSim(q('.simc'), Object.assign({ timeScale: FACTOR_SPEED }, cfg.simOpts));
+  const D = cfg.dual;
+  const gctx = D ? null : setupCanvas(q('.graphc'), 640, 240);
+  const gasCtx = D ? (D.gasOnly ? setupCanvas(q('.gasc'), 640, 260) : setupCanvas(q('.gasc'), 460, 330)) : null;
+  const massCtx = D && !D.gasOnly ? setupCanvas(q('.massc'), 460, 330) : null;
+  const glegend = q('.glegend');
+  function drawGraphs() {
+    if (!D) { drawRunGraph(gctx, sim, cfg.graphMax, cfg.yTitle); return; }
+    drawRunGraph(gasCtx, sim, D.gasMax, 'Volume of gas / cm³', { legend: false, map: n => n * D.gasPer });
+    if (massCtx) drawRunGraph(massCtx, sim, D.massMax, D.massTitle, { legend: false, map: (n, m) => m.mass0 - n * D.massPer });
+    const runCols = ['#64748b', '#94a3b8', '#cbd5e1'];
+    const now = 'Now: ' + sim.label + (sim.initRate != null ? ` (initial rate ${sim.initRate.toFixed(1)}/s)` : ' (measuring initial rate…)');
+    glegend.innerHTML = `<span><i class="sw" style="border-color:#4f46e5"></i>${now}</span>` +
+      sim.runs.map((r, i) => `<span><i class="sw dash" style="border-color:${runCols[i]}"></i>Earlier: ${r.label}</span>`).join('');
+  }
+  const extras = (cfg.extras || []).map((e, i) => ({ ...e, ctx: setupCanvas(q('.extra' + i), 640, e.h || 250) }));
+  const input = q('.main-input'), out = q('.main-out'), statsEl = q('.stats'), pauseBtn = q('.btn-pause');
+  const c = cfg.control;
+  const value = () => c.type === 'checkbox' ? input.checked : +input.value;
+
+  function showValue() { if (out) out.textContent = c.format(value()); }
+  function drawExtras() { for (const e of extras) e.draw(e.ctx, sim.o); }
+  function apply(save) {
+    const v = value();
+    showValue();
+    cfg.apply(sim.o, v);
+    sim.reset(save);
+    sim.label = c.format(v);
+    if (D) sim.meta = { mass0: D.mass0 ? D.mass0(sim.o) : 0 };
+    drawExtras(); refresh();
+  }
+
+  input.addEventListener('input', showValue);
+  input.addEventListener('change', () => apply(true));
+  q('.opt-labels').addEventListener('change', e => sim.o.showLabels = e.target.checked);
+  q('.opt-slow').addEventListener('change', e => sim.o.slow = e.target.checked);
+  pauseBtn.addEventListener('click', () => { sim.o.paused = !sim.o.paused; pauseBtn.textContent = sim.o.paused ? '▶ Play' : '⏸ Pause'; });
+  q('.btn-again').addEventListener('click', () => apply(true));
+  q('.btn-clear').addEventListener('click', () => { sim.runs = []; drawGraphs(); });
+
+  function refresh() {
+    const rr = sim.rollingRates(4);
+    const init = sim.initRate != null ? sim.initRate.toFixed(1) : (sim.t > 0 ? 'measuring…' : '–');
+    const rows = [
+      ['Initial rate: effective collisions per second at the start of the reaction. Compare this between settings.', init, 'hl'],
+      [cfg.collLabel + ' collisions per second (right now)', rr ? rr.all.toFixed(1) : '–'],
+      ['Effective collisions per second (right now)', rr ? rr.eff.toFixed(1) : '–'],
+      ['% of collisions that are effective', sim.total ? (100 * sim.eff / sim.total).toFixed(1) + '%' : '–'],
+      ...cfg.stats(sim),
+      ...(D ? [['Volume of gas produced', (sim.products * D.gasPer) + ' cm³']] : []),
+      ...(D && !D.gasOnly ? [[D.massStat, Math.max(0, sim.meta.mass0 - sim.products * D.massPer).toFixed(2) + ' g']] : [])
+    ];
+    statsEl.innerHTML = rows.map(([k, v, cls]) => `<div class="stat ${cls || ''}"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+    drawGraphs();
+  }
+
+  apply(false);
+  let acc = 0;
+  return {
+    sim, setValue(v){ if (c.type==='checkbox') input.checked=v; else input.value=v; apply(true); },
+    tick(dt) {
+      sim.update(dt); sim.draw();
+      acc += dt; if (acc > 0.25) { acc = 0; refresh(); }
+    }
+  };
+}
+
+const gasStats = s => [['Product AB formed', s.products], ['Reactant particles left', s.count('A') + s.count('B')]];
+const EA_UNCAT = 78, EA_CAT = 40;
+
+const factorTabs = window.__factorTabs = {
+  pressure: makeFactorTab({
+    id: 'pressure',
+    title: 'Gaseous reactants A and B in a container with a movable piston',
+    legend: ['A', 'B', 'P', 'good', 'bad'],
+    simOpts: { nA: 20, nB: 40, rA: 9, rB: 9, ea: 55, showPiston: true },
+    control: { type: 'range', label: 'Pressure', min: 1, max: 4, step: 0.5, value: 1, format: v => v.toFixed(1) + ' atm' },
+    apply: (o, v) => { o.pressure = v; },
+    collLabel: 'A–B', graphTitle: 'Amount of product formed over time', yTitle: 'Product AB formed', graphMax: 30,
+    dual: {
+      gasOnly: true, gasPer: 3, gasMax: 60,
+      note: 'At a higher pressure the line is steeper and levels off sooner, but it levels off at the same final volume, because the same amount of reactants is used.'
+    },
+    stats: s => [['Volume of container', Math.round(100 / s.o.pressure) + '% of original']],
+    info: `<h3>Explanation</h3>
+      <p>Increasing the pressure pushes the <b>same number of gas particles into a smaller volume</b>.</p>
+      <ul>
+        <li>There are more particles per unit volume, so particles collide <b>more frequently</b>.</li>
+        <li>The <b>frequency of effective collisions increases</b>, so the rate of reaction increases.</li>
+        <li>Notice that the <b>% of collisions that are effective stays about the same</b>: the temperature has not changed, so the particles' energies have not changed.</li>
+      </ul>
+      <p class="hint">Pressure only affects the rate of reactions involving gases.</p>`
+  }),
+
+  temperature: makeFactorTab({
+    id: 'temperature',
+    title: 'Reactants A and B in solution',
+    legend: ['A', 'B', 'P', 'good', 'bad'],
+    simOpts: { liquid: true, nA: 20, nB: 40, rA: 9, rB: 9, ea: 65, productLeaves: true },
+    control: { type: 'range', label: 'Temperature', min: 0, max: 300, step: 25, value: 25, format: v => v + ' °C' },
+    apply: (o, v) => { o.temp = v + 273; },
+    collLabel: 'A–B', graphTitle: 'Amount of product formed over time', yTitle: 'Product AB formed', graphMax: 30,
+    dual: {
+      gasPer: 3, gasMax: 60, massPer: 0.1, massMax: 3,
+      mass0: o => (o.nA + o.nB) * 0.05,
+      massHeading: 'Mass of reactants against time', massTitle: 'Mass of reactants / g', massStat: 'Mass of reactants left',
+      note: 'At a higher temperature the line is steeper and levels off sooner, but it levels off at the same final volume, because the same amount of reactants is used.'
+    },
+    stats: () => [],
+    extras: [{
+      title: 'Distribution of particle energies (Maxwell–Boltzmann)',
+      hint: 'The shaded area shows the particles with energy ≥ Eₐ. At a higher temperature the curve flattens and shifts right, so the shaded area gets bigger.',
+      draw(ctx, o) {
+        const kT = kTof(o.temp), kR = kTof(ROOM_K), f = fracAbove(o.ea, kT), f0 = fracAbove(o.ea, kR);
+        const curves = [];
+        if (o.temp !== ROOM_K) curves.push({ kT: kR, color: '#94a3b8', dash: [5, 4], label: '25 °C (reference)' });
+        curves.push({ kT, color: '#ef4444', label: toC(o.temp) + ' °C' });
+        drawMB(ctx, {
+          curves, eas: [{ ea: o.ea, color: '#7c3aed', label: 'Eₐ = ' + o.ea }],
+          shade: { kT, ea: o.ea, color: 'rgba(34,197,94,0.35)' },
+          notes: [`Particles with energy ≥ Eₐ at ${toC(o.temp)} °C: ${(100 * f).toFixed(1)}%`].concat(o.temp !== ROOM_K ? [`at 25 °C: ${(100 * f0).toFixed(1)}%`] : [])
+        });
+      }
+    }],
+    info: `<h3>Explanation</h3>
+      <p>At a higher temperature, particles gain kinetic energy and <b>move faster</b>.</p>
+      <ul>
+        <li>Particles collide <b>more frequently</b>.</li>
+        <li>More importantly, a <b>greater proportion of particles have energy ≥ E<sub>a</sub></b>, so a larger % of collisions are effective.</li>
+        <li>So the <b>frequency of effective collisions increases significantly</b> and the rate increases.</li>
+      </ul>
+      <p class="hint">Compare the "% of collisions that are effective" at 25 °C and 200 °C.</p>`
+  }),
+
+  size: makeFactorTab({
+    id: 'size',
+    title: 'Solid reactant in a solution of acid',
+    legend: ['S', 'acid', 'good', 'bad'],
+    simOpts: { nA: 0, nB: 40, rB: 8, rS: 8, ea: 38, solidLevel: 1 },
+    control: {
+      type: 'range', label: 'Particle size of solid', min: 1, max: 4, step: 1, value: 1,
+      format: v => ['Large lump', 'Small lumps', 'Granules', 'Fine powder'][v - 1],
+      ticks: ['Large lump', 'Small lumps', 'Granules', 'Powder']
+    },
+    apply: (o, v) => { o.solidLevel = v; },
+    collLabel: 'Acid–solid', graphTitle: 'Amount of solid reacted over time', yTitle: 'Solid particles reacted', graphMax: 64,
+    dual: {
+      gasPer: 1, gasMax: 64, massPer: 0.05, massMax: 3.2,
+      mass0: o => 64 * 0.05,
+      massHeading: 'Mass of solid reactant against time', massTitle: 'Mass of solid / g', massStat: 'Mass of solid reactant left',
+      note: 'A powder gives a steeper line than a large lump. Both level off at the same final volume, because the same mass of solid is used (the acid is in excess).'
+    },
+    stats: s => [['Solid particles exposed at the surface', s.exposedCount()], ['Number of pieces', [1, 4, 16, 64][s.o.solidLevel - 1]]],
+    info: `<h3>Explanation</h3>
+      <p>The same mass of solid (64 particles) is split into smaller and smaller pieces.</p>
+      <ul>
+        <li>Acid particles can only collide with solid particles <b>on the surface</b>. Particles inside the lump are shielded.</li>
+        <li>Smaller particle size → <b>larger total surface area</b> exposed → more solid particles available for collision.</li>
+        <li>Collisions happen <b>more frequently</b>, so the <b>frequency of effective collisions increases</b> and the rate increases.</li>
+      </ul>
+      <p class="hint">Watch the "Solid particles exposed at the surface" reading as you go from a large lump to a powder.</p>`
+  }),
+
+  concentration: makeFactorTab({
+    id: 'concentration',
+    title: 'Reactants A and B in a fixed volume of solution',
+    legend: ['A', 'B', 'P', 'good', 'bad'],
+    simOpts: { liquid: true, nA: 10, nB: 20, rA: 9, rB: 9, ea: 55, productLeaves: true },
+    control: { type: 'range', label: 'Concentration of reactants', min: 0.5, max: 2, step: 0.25, value: 1, format: v => v.toFixed(2) + ' mol/dm³' },
+    apply: (o, v) => { o.nA = Math.round(10 * v); o.nB = 2 * o.nA; },
+    collLabel: 'A–B', graphTitle: 'Amount of product formed over time', yTitle: 'Product AB formed', graphMax: 32,
+    dual: {
+      gasPer: 3, gasMax: 60, massPer: 0.1, massMax: 3,
+      mass0: o => (o.nA + o.nB) * 0.05,
+      massHeading: 'Mass of reactants against time', massTitle: 'Mass of reactants / g', massStat: 'Mass of reactants left',
+      note: 'A higher concentration gives a steeper line. Here it also levels off at a larger volume, because there are more reactant particles in total to make gas.'
+    },
+    stats: () => [],
+    info: `<h3>Explanation</h3>
+      <p>A higher concentration means <b>more reactant particles dissolved in the same volume</b> of solution.</p>
+      <ul>
+        <li>Reactant particles are closer together, so they collide <b>more frequently</b>.</li>
+        <li>The <b>frequency of effective collisions increases</b>, so the rate of reaction increases.</li>
+        <li>The % of collisions that are effective stays about the same, because the temperature (and so the particles' energies) has not changed.</li>
+      </ul>`
+  }),
+
+  catalyst: makeFactorTab({
+    id: 'catalyst',
+    title: 'Reactants A and B, with or without a catalyst',
+    legend: ['A', 'B', 'P', 'good', 'bad'],
+    simOpts: { nA: 20, nB: 40, rA: 9, rB: 9, ea: EA_UNCAT, productLeaves: true },
+    control: { type: 'checkbox', label: 'Catalyst present', value: false, format: v => v ? 'With catalyst' : 'No catalyst' },
+    apply: (o, v) => { o.ea = v ? EA_CAT : EA_UNCAT; },
+    collLabel: 'A–B', graphTitle: 'Amount of product formed over time', yTitle: 'Product AB formed', graphMax: 30,
+    dual: {
+      gasPer: 3, gasMax: 60, massPer: 0.1, massMax: 3,
+      mass0: o => (o.nA + o.nB) * 0.05,
+      massHeading: 'Mass of reactants against time', massTitle: 'Mass of reactants / g', massStat: 'Mass of reactants left',
+      note: 'With a catalyst the line is steeper and levels off sooner, but it levels off at the same final volume: a catalyst does not change the amount of product made.'
+    },
+    stats: s => [['Activation energy now', s.o.ea + ' kJ/mol']],
+    extras: [
+      {
+        title: 'Energy profile diagram',
+        h: 260,
+        draw(ctx, o) { drawProfile(ctx, { ea: EA_UNCAT, catEa: o.ea === EA_CAT ? EA_CAT : null }); }
+      },
+      {
+        title: 'Distribution of particle energies (Maxwell–Boltzmann)',
+        hint: 'Temperature is unchanged, so the curve does not move. The catalyst moves the Eₐ line to the left, so a bigger shaded area of particles has enough energy.',
+        draw(ctx, o) {
+          const cat = o.ea === EA_CAT;
+          drawMB(ctx, {
+            curves: [{ kT: kTof(ROOM_K), color: '#0f172a', label: '25 °C' }],
+            eas: [
+              { ea: EA_UNCAT, color: cat ? '#94a3b8' : '#dc2626', label: 'Eₐ without catalyst' },
+              { ea: EA_CAT, color: cat ? '#16a34a' : '#cbd5e1', label: 'Eₐ with catalyst', dy: 18 }
+            ],
+            shade: { kT: kTof(ROOM_K), ea: o.ea, color: cat ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.3)' },
+            notes: [`Particles with energy ≥ Eₐ: ${(100 * fracAbove(o.ea, kTof(ROOM_K))).toFixed(1)}%`]
+          });
+        }
+      }
+    ],
+    info: `<h3>Explanation</h3>
+      <p>A catalyst provides an <b>alternative reaction pathway with a lower activation energy</b>.</p>
+      <ul>
+        <li>A <b>greater proportion of colliding particles have energy ≥ E<sub>a</sub></b>.</li>
+        <li>The <b>frequency of effective collisions increases</b>, so the rate of reaction increases.</li>
+        <li>The catalyst is <b>chemically unchanged</b> at the end of the reaction.</li>
+      </ul>
+      <p class="hint">Tick and untick the box, then compare the graph lines and the "% of collisions that are effective" reading.</p>`
+  })
+};
+
+/* =========================================================
+   Tabs and animation loop
+   ========================================================= */
+let activeTab = 'collision', activeSub = 'single';
+document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + btn.dataset.tab));
+  activeTab = btn.dataset.tab;
+}));
+document.querySelectorAll('.sub-btn').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.sub-btn').forEach(b => b.classList.toggle('active', b === btn));
+  document.querySelectorAll('.sub-panel').forEach(p => p.classList.toggle('active', p.id === 'sub-' + btn.dataset.sub));
+  activeSub = btn.dataset.sub;
+}));
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (activeTab === 'collision') (activeSub === 'single' ? single : multi).tick(dt);
+  else factorTabs[activeTab].tick(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
